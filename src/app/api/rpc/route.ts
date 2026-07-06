@@ -16,6 +16,27 @@ import { getSepoliaRpcUrl } from "@/lib/zamaConfig";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * Health/diagnostic: reveals ONLY the upstream host (not the key/path), so we
+ * can confirm which provider the deployed function forwards to (Alchemy vs the
+ * public fallback) without exposing any secret.
+ */
+export function GET(): Response {
+  let host = "unknown";
+  let hasApiKeyPath = false;
+  try {
+    const u = new URL(getSepoliaRpcUrl());
+    host = u.host;
+    hasApiKeyPath = u.pathname.replace(/\/+$/, "").length > 0;
+  } catch {
+    /* ignore */
+  }
+  return Response.json(
+    { ok: true, upstreamHost: host, hasApiKeyPath },
+    { headers: { "cache-control": "no-store" } },
+  );
+}
+
 export async function POST(req: NextRequest): Promise<Response> {
   const upstream = getSepoliaRpcUrl(); // server-only SEPOLIA_RPC_URL
   const body = Buffer.from(await req.arrayBuffer());
