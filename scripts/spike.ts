@@ -143,12 +143,12 @@ async function main() {
 
   const publicClient = createPublicClient({
     chain: sepolia,
-    transport: http(RPC),
+    transport: http(RPC, { timeout: 30_000, retryCount: 5 }),
   });
   const walletClient = createWalletClient({
     account,
     chain: sepolia,
-    transport: http(RPC),
+    transport: http(RPC, { timeout: 30_000, retryCount: 5 }),
   });
 
   console.log("=== Phase 1 Layer A — headless spike ===");

@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "ground-truth": "tsx scripts/enumerate-registry.ts",
-    "spike": "tsx scripts/spike.ts"
+    "spike": "node scripts/spike.ts"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.11",
