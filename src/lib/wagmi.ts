@@ -13,12 +13,15 @@ const walletConnectProjectId =
   process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "";
 
 /**
- * Sepolia RPC endpoint. Read from env per project convention; falls back to a
- * public endpoint so the app still boots if the env var is unset.
+ * Same-origin JSON-RPC endpoint. The browser never sees the provider URL/key —
+ * it talks to our `/api/rpc` route, which forwards to `SEPOLIA_RPC_URL`
+ * server-side. Absolute (origin-based) URL so it also works inside the SDK's
+ * Web Worker. SSR placeholder is never used for client RPC calls.
  */
 const sepoliaRpcUrl =
-  process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL ??
-  "https://ethereum-sepolia-rpc.publicnode.com";
+  typeof window !== "undefined"
+    ? `${window.location.origin}/api/rpc`
+    : "http://localhost/api/rpc";
 
 export const wagmiConfig = getDefaultConfig({
   appName: "Wrapscan",

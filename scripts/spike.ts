@@ -106,9 +106,9 @@ function loadEnvLocal() {
 }
 
 function rpcUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL || zamaSepolia.network
-  );
+  // Headless: use the direct RPC from .env.local (runs server-side, no browser
+  // exposure). Prefer the server-only SEPOLIA_RPC_URL.
+  return process.env.SEPOLIA_RPC_URL || zamaSepolia.network;
 }
 
 /** Load the throwaway key, or generate + persist one and stop for funding. */

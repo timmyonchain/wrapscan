@@ -1,7 +1,7 @@
 /**
  * Dev-only ground-truth script.
  *
- * Connects to Sepolia via our RPC (NEXT_PUBLIC_SEPOLIA_RPC_URL), enumerates the
+ * Connects to Sepolia via our RPC (SEPOLIA_RPC_URL), enumerates the
  * Wrappers Registry, resolves ERC-20 + ERC-7984 metadata for every pair, labels
  * validity and faucet-ability, and writes a clean JSON snapshot to
  * public/registry-ground-truth.json. Also prints the resolved Zama config with

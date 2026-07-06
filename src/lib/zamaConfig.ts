@@ -74,7 +74,12 @@ export const resolvedZamaSepoliaValues: ResolvedConfigValue[] = [
  */
 export const WRAPPERS_REGISTRY_ADDRESS = zamaSepolia.registryAddress as `0x${string}`;
 
-/** Sepolia RPC used by the app/scripts. Falls back to the SDK's default. */
+/**
+ * Server-side Sepolia RPC (direct upstream). Read from the server-only
+ * `SEPOLIA_RPC_URL`; falls back to the SDK's default public endpoint. Used by
+ * server code (the /api/rpc proxy upstream, /api/registry, ground-truth script)
+ * — never the browser, which talks to the same-origin /api/rpc proxy instead.
+ */
 export function getSepoliaRpcUrl(): string {
-  return process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL || zamaSepolia.network;
+  return process.env.SEPOLIA_RPC_URL || zamaSepolia.network;
 }

@@ -41,9 +41,15 @@ export function relayerProxyBase(): string {
   return `${origin}/api/relayer/${zamaSepolia.id}`;
 }
 
-/** Sepolia RPC used for the SDK's own chain reads (from env; falls back to SDK default). */
+/**
+ * Sepolia RPC used for the SDK's own chain reads. Points at our same-origin
+ * `/api/rpc` proxy (absolute URL so it also resolves inside the Web Worker),
+ * so the provider key never ships to the browser.
+ */
 function sdkNetworkRpc(): string {
-  return process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL || zamaSepolia.network;
+  return typeof window !== "undefined"
+    ? `${window.location.origin}/api/rpc`
+    : "http://localhost/api/rpc";
 }
 
 export function createBrowserSdk(
