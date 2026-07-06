@@ -15,7 +15,7 @@ import { sepolia } from "wagmi/chains";
 import { formatUnits, getAddress, type Address } from "viem";
 import type { ZamaSDK } from "@zama-fhe/sdk";
 import type { WrappedToken } from "@zama-fhe/sdk";
-import { createBrowserSdk } from "./sdk";
+import { createBrowserSdk, relayerProxyBase } from "./sdk";
 
 const CUSDT_WRAPPER = getAddress("0x4E7B06D78965594eB5EF5414c357ca21E1554491");
 const DECIMALS = 6; // USDTMock
@@ -109,6 +109,52 @@ export default function SpikePage() {
     [say],
   );
 
+  // Diagnostic: prove the same-origin relayer proxy fixes CORS by performing
+  // ONLY the public-key fetch (keyurl) — no wallet signature required.
+  const onCheckRelayer = () =>
+    run("check-relayer", async () => {
+      const base = relayerProxyBase();
+      say(`resolved relayer URL (same-origin proxy): ${base}`);
+      const keyurl = `${base}/keyurl`;
+      say(`GET ${keyurl} …`);
+      const res = await fetch(keyurl, { method: "GET" });
+      say(`proxy /keyurl -> HTTP ${res.status}`);
+      const text = await res.text();
+      if (!res.ok)
+        throw new Error(`keyurl proxy returned ${res.status}: ${text.slice(0, 200)}`);
+      let parsedOk = false;
+      try {
+        const j = JSON.parse(text) as {
+          response?: { fhe_key_info?: unknown; fheKeyInfo?: unknown };
+        };
+        parsedOk = !!(j.response?.fhe_key_info ?? j.response?.fheKeyInfo);
+      } catch {
+        /* fall through */
+      }
+      say(
+        parsedOk
+          ? "✓ public-key response parsed (fhe_key_info present) — CORS fix confirmed via proxy."
+          : `⚠ HTTP 200 but unexpected body shape: ${text.slice(0, 160)}`,
+      );
+
+      // SDK-level check (still no EIP-712 signature) when a wallet is present.
+      if (publicClient && walletClient) {
+        say("initializing SDK (web relayer + WASM) and fetching FHE public key via SDK…");
+        if (!sdkRef.current)
+          sdkRef.current = createBrowserSdk(publicClient, walletClient);
+        const key = await sdkRef.current.relayer.fetchFheEncryptionKeyBytes();
+        say(
+          key
+            ? "✓ SDK fetched the FHE public key through the proxy (no signature) — browser relayer path works."
+            : "⚠ SDK returned a null public key.",
+        );
+      } else {
+        say(
+          "(connect a wallet to also run the SDK-level fetch; the raw proxy check above already confirms the CORS fix)",
+        );
+      }
+    });
+
   const onMint = () =>
     run("mint", async () => {
       if (!walletClient || !address) throw new Error("Connect wallet first.");
@@ -199,6 +245,12 @@ export default function SpikePage() {
 
       <div style={{ margin: "16px 0" }}>
         <ConnectButton />
+      </div>
+
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "12px 0" }}>
+        <button onClick={onCheckRelayer} disabled={busy !== null}>
+          Check relayer (no signature)
+        </button>
       </div>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "12px 0" }}>
