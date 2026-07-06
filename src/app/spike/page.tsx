@@ -15,7 +15,7 @@ import { sepolia } from "wagmi/chains";
 import { formatUnits, getAddress, type Address } from "viem";
 import type { ZamaSDK } from "@zama-fhe/sdk";
 import type { WrappedToken } from "@zama-fhe/sdk";
-import { createBrowserSdk, relayerProxyBase } from "./sdk";
+import { createBrowserSdk, relayerProxyBase, warmRelayerKeyMaterial } from "./sdk";
 
 const CUSDT_WRAPPER = getAddress("0x4E7B06D78965594eB5EF5414c357ca21E1554491");
 const DECIMALS = 6; // USDTMock
@@ -57,6 +57,7 @@ export default function SpikePage() {
   const sdkRef = useRef<ZamaSDK | null>(null);
   const wrappedRef = useRef<WrappedToken | null>(null);
   const underlyingRef = useRef<Address | null>(null);
+  const warmedRef = useRef<boolean>(false);
 
   const onSepolia = chainId === sepolia.id;
   const ready = isConnected && onSepolia && !!walletClient && !!publicClient;
@@ -109,50 +110,54 @@ export default function SpikePage() {
     [say],
   );
 
-  // Diagnostic: prove the same-origin relayer proxy fixes CORS by performing
-  // ONLY the public-key fetch (keyurl) — no wallet signature required.
+  // Pre-warm the FHE public key + CRS into the browser HTTP cache (main thread,
+  // no 30s worker cap) so the SDK's worker init hits cache. Runs at most once.
+  const ensureWarmed = useCallback(async () => {
+    if (warmedRef.current) return;
+    say("warming FHE key material (public key + CRS) into HTTP cache…");
+    const w = await warmRelayerKeyMaterial();
+    warmedRef.current = true;
+    say(
+      `✓ warmed: public key ${(w.publicKeyBytes / 1024).toFixed(0)} KB, CRS ${(
+        w.crsBytes /
+        1024 /
+        1024
+      ).toFixed(2)} MB in ${w.ms} ms (host ${new URL(w.crsUrl).host}).`,
+    );
+  }, [say]);
+
+  // Diagnostic: run the FULL SDK public-key init (not just the raw /keyurl
+  // fetch) and log how long it takes. No wallet signature (no EIP-712) needed.
   const onCheckRelayer = () =>
     run("check-relayer", async () => {
       const base = relayerProxyBase();
       say(`resolved relayer URL (same-origin proxy): ${base}`);
-      const keyurl = `${base}/keyurl`;
-      say(`GET ${keyurl} …`);
-      const res = await fetch(keyurl, { method: "GET" });
-      say(`proxy /keyurl -> HTTP ${res.status}`);
-      const text = await res.text();
-      if (!res.ok)
-        throw new Error(`keyurl proxy returned ${res.status}: ${text.slice(0, 200)}`);
-      let parsedOk = false;
-      try {
-        const j = JSON.parse(text) as {
-          response?: { fhe_key_info?: unknown; fheKeyInfo?: unknown };
-        };
-        parsedOk = !!(j.response?.fhe_key_info ?? j.response?.fheKeyInfo);
-      } catch {
-        /* fall through */
-      }
-      say(
-        parsedOk
-          ? "✓ public-key response parsed (fhe_key_info present) — CORS fix confirmed via proxy."
-          : `⚠ HTTP 200 but unexpected body shape: ${text.slice(0, 160)}`,
-      );
 
-      // SDK-level check (still no EIP-712 signature) when a wallet is present.
-      if (publicClient && walletClient) {
-        say("initializing SDK (web relayer + WASM) and fetching FHE public key via SDK…");
-        if (!sdkRef.current)
-          sdkRef.current = createBrowserSdk(publicClient, walletClient);
-        const key = await sdkRef.current.relayer.fetchFheEncryptionKeyBytes();
+      // 1) Same-origin /keyurl (the previously CORS-blocked call) + warm blobs.
+      await ensureWarmed();
+
+      // 2) Full SDK public-key init through the worker (needs a wallet client
+      //    to build the SDK, but triggers NO signature).
+      if (!publicClient || !walletClient) {
         say(
-          key
-            ? "✓ SDK fetched the FHE public key through the proxy (no signature) — browser relayer path works."
-            : "⚠ SDK returned a null public key.",
+          "(connect a wallet to run the full SDK init; the warm step above already confirms the relayer + key-material fetch works)",
         );
-      } else {
-        say(
-          "(connect a wallet to also run the SDK-level fetch; the raw proxy check above already confirms the CORS fix)",
-        );
+        return;
       }
+      if (!sdkRef.current)
+        sdkRef.current = createBrowserSdk(publicClient, walletClient);
+
+      const t0 = performance.now();
+      say("initializing SDK worker + fetching FHE public key & CRS via SDK…");
+      const key = await sdkRef.current.relayer.fetchFheEncryptionKeyBytes();
+      // Force the CRS/public-params path too, to prove full init (no signature).
+      await sdkRef.current.relayer.getPublicParams(2048);
+      const ms = Math.round(performance.now() - t0);
+      if (!key) throw new Error("SDK returned a null FHE public key.");
+      say(
+        `✓ FULL public-key init completed via SDK in ${ms} ms — no timeout, no signature. ` +
+          `Cached in IndexedDB for next time.`,
+      );
     });
 
   const onMint = () =>
@@ -188,6 +193,7 @@ export default function SpikePage() {
         args: [address],
       });
       if (bal <= 0n) throw new Error("No public balance to wrap — Mint first.");
+      await ensureWarmed();
       say(`shield (wrap) ${formatUnits(bal, DECIMALS)} ${SYMBOL}…`);
       const res = await wrapped.shield(bal);
       say(`shield tx: ${res.txHash}`);
@@ -199,6 +205,7 @@ export default function SpikePage() {
     run("decrypt", async () => {
       if (!address) throw new Error("Connect wallet first.");
       const wrapped = getWrapped();
+      await ensureWarmed();
       say("reading encrypted handle…");
       const handle = await wrapped.confidentialBalanceOf(address);
       setEncHandle(handle);
@@ -213,6 +220,7 @@ export default function SpikePage() {
     run("unwrap", async () => {
       if (!address) throw new Error("Connect wallet first.");
       const wrapped = getWrapped();
+      await ensureWarmed();
       say("decrypting current balance to size the unwrap…");
       const clear = await wrapped.balanceOf(address);
       if (clear <= 0n) throw new Error("Private balance is 0 — Wrap first.");
