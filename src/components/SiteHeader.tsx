@@ -62,8 +62,14 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-3">
           <Link
-            href="/spike"
+            href="/decrypt"
             className="hidden cursor-pointer text-sm text-faint transition-colors duration-200 hover:text-gold sm:inline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+          >
+            Decrypt any token
+          </Link>
+          <Link
+            href="/spike"
+            className="hidden cursor-pointer text-sm text-faint transition-colors duration-200 hover:text-gold md:inline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
           >
             Live decrypt demo
           </Link>

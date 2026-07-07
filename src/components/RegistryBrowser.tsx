@@ -90,7 +90,7 @@ export function RegistryBrowser() {
         active.length === 1 ? "pair" : "pairs"
       } on Sepolia · ${faucetCount} faucet-able mock${
         faucetCount === 1 ? "" : "s"
-      } · ${restrictedCount} restricted`}
+      } · ${restrictedCount} restricted · ${revoked.length} revoked`}
     >
       {active.length === 0 ? (
         <div className="glass mx-auto max-w-xl rounded-2xl p-8 text-center text-muted">
@@ -104,11 +104,16 @@ export function RegistryBrowser() {
         </CardGrid>
       )}
 
-      {revoked.length > 0 && (
-        <div className="mt-12">
-          <h3 className="mb-4 text-sm font-medium uppercase tracking-wide text-faint">
+      {revoked.length > 0 ? (
+        <div className="mt-14">
+          <h3 className="text-sm font-medium uppercase tracking-wide text-faint">
             Revoked ({revoked.length})
           </h3>
+          <p className="mb-5 mt-1 max-w-2xl text-sm text-muted">
+            These pairs are recorded in the on-chain registry but flagged
+            invalid (superseded or de-registered). Shown for transparency and
+            dimmed. No faucet, wrap or unwrap actions are offered on them.
+          </p>
           <CardGrid>
             {revoked.map((pair) => (
               <PairCard
@@ -118,6 +123,11 @@ export function RegistryBrowser() {
             ))}
           </CardGrid>
         </div>
+      ) : (
+        <p className="mt-10 text-sm text-faint">
+          The registry currently reports no revoked entries. Any that appear
+          will be listed here, clearly marked and read-only.
+        </p>
       )}
     </Section>
   );
