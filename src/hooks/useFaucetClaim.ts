@@ -6,7 +6,7 @@ import {
   useChainId,
   usePublicClient,
   useSwitchChain,
-  useWriteContract,
+  useWalletClient,
 } from "wagmi";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { sepolia } from "wagmi/chains";
@@ -34,6 +34,19 @@ export interface FaucetClaim {
   reset: () => void;
 }
 
+// The wallet may never open a prompt (locked, popup blocked, extension asleep).
+// Cap the wait so the button can ALWAYS recover instead of spinning forever.
+const SIGNATURE_TIMEOUT_MS = 90_000;
+const RECEIPT_TIMEOUT_MS = 150_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 export function useFaucetClaim(opts: {
   token: Address;
   decimals: number | null;
@@ -43,9 +56,10 @@ export function useFaucetClaim(opts: {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const publicClient = usePublicClient();
+  // The viem WalletClient bound to the CONNECTED connector/account (Rabby, etc.).
+  const { data: walletClient } = useWalletClient();
   const { switchChainAsync, isPending: switching } = useSwitchChain();
   const { openConnectModal } = useConnectModal();
-  const { writeContractAsync } = useWriteContract();
 
   const [phase, setPhase] = useState<TxPhase>("idle");
   const [hash, setHash] = useState<`0x${string}` | undefined>();
@@ -78,17 +92,23 @@ export function useFaucetClaim(opts: {
 
   const claim = useCallback(async () => {
     setError(undefined);
+
     if (!isConnected || !address) {
       openConnectModal?.();
       return;
     }
     if (!onSepolia) {
       await switchToSepolia();
-      return; // let the user click Claim again once on Sepolia
+      return; // user clicks Claim again once actually on Sepolia
     }
     if (decimals === null) {
       setPhase("error");
       setError("This token's decimals are unknown, so a safe amount can't be minted.");
+      return;
+    }
+    if (!walletClient) {
+      setPhase("error");
+      setError("Wallet isn't ready yet. Give it a second and try again.");
       return;
     }
     if (!publicClient) {
@@ -96,18 +116,31 @@ export function useFaucetClaim(opts: {
       setError("No RPC client available. Reload and try again.");
       return;
     }
+
     try {
+      // Dispatch the mint straight to the connected wallet. No simulate/prepare
+      // step, no chainId param (we're already gated on Sepolia) — just the
+      // signature request, time-boxed so it can never hang.
       setPhase("confirming");
-      const txHash = await writeContractAsync({
-        address: token,
-        abi: MINT_ABI,
-        functionName: "mint",
-        args: [address, claimAmount(decimals)],
-        chainId: sepolia.id,
-      });
+      const txHash = await withTimeout(
+        walletClient.writeContract({
+          address: token,
+          abi: MINT_ABI,
+          functionName: "mint",
+          args: [address, claimAmount(decimals)],
+          account: address,
+          chain: sepolia,
+        }),
+        SIGNATURE_TIMEOUT_MS,
+        "Your wallet didn't open a confirmation. Make sure it's unlocked and no popup was blocked, then try again.",
+      );
+
       setHash(txHash);
       setPhase("mining");
-      await publicClient.waitForTransactionReceipt({ hash: txHash });
+      await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+        timeout: RECEIPT_TIMEOUT_MS,
+      });
       setPhase("success");
       onSuccess?.();
     } catch (e) {
@@ -119,8 +152,8 @@ export function useFaucetClaim(opts: {
     isConnected,
     onSepolia,
     decimals,
+    walletClient,
     publicClient,
-    writeContractAsync,
     openConnectModal,
     switchToSepolia,
     token,
