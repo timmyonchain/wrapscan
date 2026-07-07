@@ -3,25 +3,72 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Locked Zama theme — dark, warm, premium. Gold sampled from zama.org
+     (--zama-yellow: #ffd208). Gold is for accents/highlights only, never body text. */
+  /* RGB channels so Tailwind opacity modifiers (bg-gold/10, border-gold/30…) work. */
+  --zama-gold-rgb: 255 210 8;
+  --zama-gold-soft-rgb: 255 224 82;
+  --void-rgb: 11 10 8; /* warm near-black — matches the Beams background void */
+  --ink-rgb: 20 18 13; /* panel base */
+  --text-rgb: 247 245 239; /* warm near-white — all reading text */
+  --muted-rgb: 179 171 156; /* warm gray — secondary text (>= 4.5:1 on void) */
+  --faint-rgb: 139 132 119; /* tertiary labels */
+  --danger-rgb: 240 133 125;
+  /* Hex convenience tokens for direct CSS use. */
+  --zama-gold: #ffd208;
+  --hairline: rgba(255, 244, 214, 0.1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text);
+  background: var(--void);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-space-grotesk), var(--font-inter), sans-serif;
+    letter-spacing: -0.02em;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  /* Dark translucent glass panel that stays legible over the animated beams. */
+  .glass {
+    background: linear-gradient(
+      180deg,
+      rgba(28, 25, 18, 0.66),
+      rgba(16, 14, 10, 0.62)
+    );
+    backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+    border: 1px solid var(--hairline);
+  }
+  .gold-glow {
+    box-shadow:
+      0 0 0 1px rgba(255, 210, 8, 0.18),
+      0 8px 40px -12px rgba(255, 210, 8, 0.28);
+  }
+  /* Respect users who ask for less motion: neutralize decorative transitions. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
   }
 }
