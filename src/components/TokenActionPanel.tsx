@@ -9,12 +9,13 @@ import {
 } from "wagmi";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { sepolia } from "wagmi/chains";
-import { formatUnits, parseUnits } from "viem";
+import { formatUnits } from "viem";
 import {
   type RegistryPair,
   displaySymbol,
   displayName,
 } from "@/lib/registry";
+import { parseAmount, trimAmount } from "@/lib/amounts";
 import { ERC20_BALANCE_ABI, sepoliaTxUrl } from "@/lib/faucet";
 import { useZamaToken } from "@/hooks/useZamaToken";
 import { useTxFlow, type TxFlow } from "@/hooks/useTxFlow";
@@ -28,22 +29,6 @@ import {
   AlertIcon,
   ExternalLinkIcon,
 } from "./icons";
-
-function trimAmount(value: string): string {
-  if (!value.includes(".")) return value;
-  const [whole, frac] = value.split(".");
-  const short = frac.replace(/0+$/, "").slice(0, 6);
-  return short.length ? `${whole}.${short}` : whole;
-}
-
-function parseAmount(input: string, decimals: number): bigint | null {
-  if (input === "" || input === "." || !/^\d*\.?\d*$/.test(input)) return null;
-  try {
-    return parseUnits(input as `${number}`, decimals);
-  } catch {
-    return null;
-  }
-}
 
 export function TokenActionPanel({
   pair,

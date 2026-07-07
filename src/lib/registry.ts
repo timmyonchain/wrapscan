@@ -51,13 +51,13 @@ function networkLabel(chainId: number): string {
 }
 
 /** Raw shape returned by GET /api/registry (see src/lib/enumerateRegistry.ts). */
-interface ApiTokenMeta {
+export interface ApiTokenMeta {
   address: string;
   symbol: string | null;
   name: string | null;
   decimals: number | null;
 }
-interface ApiEntry {
+export interface ApiEntry {
   index: number;
   token: ApiTokenMeta;
   confidentialToken: ApiTokenMeta;
@@ -69,7 +69,11 @@ interface ApiResponse {
   entries: ApiEntry[];
 }
 
-function toPair(entry: ApiEntry, chainId: number): RegistryPair {
+/**
+ * Pure parser: map one raw API entry to a display RegistryPair. Exported so
+ * tests can feed it malformed/odd metadata and assert graceful handling.
+ */
+export function parsePair(entry: ApiEntry, chainId: number): RegistryPair {
   const mapMeta = (m: ApiTokenMeta): TokenMetadata => ({
     address: m.address as Address,
     symbol: m.symbol ?? null,
@@ -114,7 +118,7 @@ export async function fetchOnchainRegistry(
   }
   const chainId = data.meta?.chainId ?? 11155111;
   return {
-    pairs: data.entries.map((e) => toPair(e, chainId)),
+    pairs: data.entries.map((e) => parsePair(e, chainId)),
     registryAddress: (data.meta?.registryAddress as Address) ?? null,
     chainId,
     generatedAt: data.meta?.generatedAt ?? new Date().toISOString(),
