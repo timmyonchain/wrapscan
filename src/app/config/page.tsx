@@ -2,7 +2,7 @@ import Link from "next/link";
 import { resolvedZamaSepoliaValues } from "@/lib/zamaConfig";
 
 export const metadata = {
-  title: "Resolved Zama Sepolia config — Wrapscan",
+  title: "Resolved Zama Sepolia config · Wrapscan",
 };
 
 export default function ConfigPage() {

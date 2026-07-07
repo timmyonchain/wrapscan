@@ -50,9 +50,9 @@ export default function SpikePage() {
 
   const [log, setLog] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
-  const [publicBal, setPublicBal] = useState<string>("—");
-  const [privateBal, setPrivateBal] = useState<string>("—");
-  const [encHandle, setEncHandle] = useState<string>("—");
+  const [publicBal, setPublicBal] = useState<string>("n/a");
+  const [privateBal, setPrivateBal] = useState<string>("n/a");
+  const [encHandle, setEncHandle] = useState<string>("n/a");
 
   const sdkRef = useRef<ZamaSDK | null>(null);
   const wrappedRef = useRef<WrappedToken | null>(null);
@@ -155,7 +155,7 @@ export default function SpikePage() {
       const ms = Math.round(performance.now() - t0);
       if (!key) throw new Error("SDK returned a null FHE public key.");
       say(
-        `✓ FULL public-key init completed via SDK in ${ms} ms — no timeout, no signature. ` +
+        `✓ FULL public-key init completed via SDK in ${ms} ms. No timeout, no signature. ` +
           `Cached in IndexedDB for next time.`,
       );
     });
@@ -192,7 +192,7 @@ export default function SpikePage() {
         functionName: "balanceOf",
         args: [address],
       });
-      if (bal <= 0n) throw new Error("No public balance to wrap — Mint first.");
+      if (bal <= 0n) throw new Error("No public balance to wrap. Mint first.");
       await ensureWarmed();
       say(`shield (wrap) ${formatUnits(bal, DECIMALS)} ${SYMBOL}…`);
       const res = await wrapped.shield(bal);
@@ -223,7 +223,7 @@ export default function SpikePage() {
       await ensureWarmed();
       say("decrypting current balance to size the unwrap…");
       const clear = await wrapped.balanceOf(address);
-      if (clear <= 0n) throw new Error("Private balance is 0 — Wrap first.");
+      if (clear <= 0n) throw new Error("Private balance is 0. Wrap first.");
       const amount = clear / 2n;
       say(`unshield (unwrap) ${amount} confidential units…`);
       const res = await wrapped.unshield(amount);
@@ -238,14 +238,14 @@ export default function SpikePage() {
 
   const status = useMemo(() => {
     if (!isConnected) return "not connected";
-    if (!onSepolia) return `wrong network (${chainId}) — switch to Sepolia`;
+    if (!onSepolia) return `wrong network (${chainId}); switch to Sepolia`;
     if (!walletClient) return "loading wallet client…";
     return busy ? `busy: ${busy}` : "ready";
   }, [isConnected, onSepolia, chainId, walletClient, busy]);
 
   return (
     <main style={{ maxWidth: 820, margin: "0 auto", padding: 24, fontFamily: "ui-monospace, monospace" }}>
-      <h1>Phase 1 spike — cUSDTMock decryption round-trip</h1>
+      <h1>Phase 1 spike: cUSDTMock decryption round-trip</h1>
       <p style={{ color: "#888" }}>
         Wrapper {CUSDT_WRAPPER} on Sepolia. Real encryption via Zama relayer +
         browser WASM. No demo-mode fallback.
@@ -274,7 +274,7 @@ export default function SpikePage() {
       <table style={{ borderCollapse: "collapse", margin: "12px 0" }}>
         <tbody>
           <tr><td style={cell}>status</td><td style={cell}>{status}</td></tr>
-          <tr><td style={cell}>account</td><td style={cell}>{address ?? "—"}</td></tr>
+          <tr><td style={cell}>account</td><td style={cell}>{address ?? "n/a"}</td></tr>
           <tr><td style={cell}>public ERC-20 balance</td><td style={cell}>{publicBal}</td></tr>
           <tr><td style={cell}>encrypted handle</td><td style={{ ...cell, wordBreak: "break-all" }}>{encHandle}</td></tr>
           <tr><td style={cell}><b>DECRYPTED private balance</b></td><td style={cell}><b>{privateBal}</b></td></tr>

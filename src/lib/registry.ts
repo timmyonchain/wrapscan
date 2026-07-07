@@ -161,5 +161,5 @@ export function displayName(meta: TokenMetadata): string {
 }
 
 export function displayDecimals(meta: TokenMetadata): string {
-  return typeof meta.decimals === "number" ? String(meta.decimals) : "—";
+  return typeof meta.decimals === "number" ? String(meta.decimals) : "n/a";
 }

@@ -17,9 +17,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Wrapscan — Confidential wrapper registry",
+  title: "Wrapscan · Confidential wrapper registry",
   description:
-    "Browse Zama's confidential token wrappers registry on Sepolia — every ERC-20 and its ERC-7984 confidential wrapper.",
+    "Browse Zama's confidential token wrappers registry on Sepolia. Every ERC-20 and its ERC-7984 confidential wrapper.",
 };
 
 export default function RootLayout({

@@ -49,7 +49,7 @@ export function Hero() {
           style={{ animationDelay: "240ms" }}
         >
           Browse, wrap, unwrap, and decrypt confidential ERC-7984 tokens on
-          Sepolia — every wrapper, read live from chain.
+          Sepolia. Every wrapper, read live from chain.
         </p>
 
         {/* CTAs */}
