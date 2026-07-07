@@ -10,7 +10,8 @@
     "ground-truth": "tsx scripts/enumerate-registry.ts",
     "spike": "node scripts/spike.ts",
     "faucet-test": "node scripts/faucet-test.ts",
-    "panel-test": "node scripts/panel-test.ts"
+    "panel-test": "node scripts/panel-test.ts",
+    "encrypt-timing": "node scripts/encrypt-timing.ts"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.11",

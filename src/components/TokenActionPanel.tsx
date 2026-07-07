@@ -190,24 +190,63 @@ export function TokenActionPanel({
         if (!address || unwrapAmount === null) throw new Error("Enter an amount.");
         setLabel("Preparing confidential engine…");
         const wrapped = await ensureReady();
-        setLabel(
-          "Preparing unwrap. You may be asked to sign to read your private balance…",
-        );
-        await wrapped.unshield(unwrapAmount, {
-          onUnwrapSubmitted: (h) => {
+
+        let submitted = false;
+        const callbacks = {
+          onUnwrapSubmitted: (h: `0x${string}`) => {
+            submitted = true;
             addStep("Unwrap request", h);
             setLabel("Unwrap requested. Finalizing…");
           },
           onFinalizing: () => setLabel("Finalizing unwrap…"),
-          onFinalizeSubmitted: (h) => {
+          onFinalizeSubmitted: (h: `0x${string}`) => {
             addStep("Finalize", h);
             setLabel("Finalizing on-chain…");
           },
-        });
+        };
+
+        const isFull = revealed !== undefined && unwrapAmount === revealed;
+        if (isFull) {
+          // Full balance: uses the on-chain encrypted balance handle directly —
+          // NO client-side encryption / relayer input-proof, so no 30s cap.
+          setLabel("Unwrapping your full balance. Confirm in your wallet…");
+          await wrapped.unshieldAll(callbacks);
+        } else {
+          // Partial: must encrypt the amount (relayer input-proof, ~10-25s).
+          // That can occasionally exceed the SDK's hard 30s encrypt timeout, so
+          // retry a couple of times — it usually lands on a faster response.
+          const MAX = 3;
+          for (let attempt = 1; ; attempt++) {
+            try {
+              setLabel(
+                attempt === 1
+                  ? "Preparing secure unwrap. Encrypting the amount, this can take up to ~25s…"
+                  : `The confidential engine was slow. Retrying (attempt ${attempt} of ${MAX})…`,
+              );
+              await wrapped.unshield(unwrapAmount, {
+                skipBalanceCheck: true,
+                ...callbacks,
+              });
+              break;
+            } catch (e) {
+              const msg = String(
+                (e as { message?: unknown })?.message ?? e,
+              ).toLowerCase();
+              const retriable =
+                !submitted &&
+                attempt < MAX &&
+                (msg.includes("timed out") ||
+                  msg.includes("timeout") ||
+                  msg.includes("encrypt"));
+              if (!retriable) throw e;
+            }
+          }
+        }
+
         setUnwrapInput("");
         await refreshBalances();
       },
-      { startLabel: "Preparing unwrap…", timeoutMs: 240_000 },
+      { startLabel: "Preparing unwrap…", timeoutMs: 300_000 },
     );
 
   const setWrapMax = () => {
@@ -376,6 +415,10 @@ export function TokenActionPanel({
                   idleLabel={`Unwrap ${confSymbol}`}
                   busyLabel="Unwrapping…"
                 />
+                <p className="text-xs text-faint">
+                  Tip: unwrapping your full balance (Max) is fastest. It skips
+                  the encryption step.
+                </p>
               </>
             )}
             <FlowFeedback
