@@ -1,12 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useChainId } from "wagmi";
 import { sepolia } from "wagmi/chains";
 import { ShieldIcon } from "./icons";
 
-/** Network pill: green-ish when on Sepolia, gold warning otherwise. */
+/** Network pill: subtle when on Sepolia, danger when on the wrong chain. */
 function NetworkIndicator() {
   const { isConnected } = useAccount();
   const chainId = useChainId();
@@ -21,9 +22,7 @@ function NetworkIndicator() {
       }`}
     >
       <span
-        className={`h-1.5 w-1.5 rounded-full ${
-          onSepolia ? "bg-gold" : "bg-danger"
-        }`}
+        className={`h-1.5 w-1.5 rounded-full ${onSepolia ? "bg-gold" : "bg-danger"}`}
       />
       {onSepolia ? "Sepolia" : "Wrong network"}
     </span>
@@ -31,8 +30,23 @@ function NetworkIndicator() {
 }
 
 export function SiteHeader() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-30 border-b border-hairline bg-void/70 backdrop-blur-md">
+    <header
+      className={`fixed inset-x-0 top-0 z-40 transition-colors duration-300 ${
+        scrolled
+          ? "border-b border-hairline bg-void/80 backdrop-blur-md"
+          : "border-b border-transparent bg-transparent"
+      }`}
+    >
       <div className="mx-auto flex h-16 max-w-content items-center justify-between gap-4 px-4 sm:px-6">
         <Link
           href="/"
@@ -45,7 +59,14 @@ export function SiteHeader() {
             Wrapscan
           </span>
         </Link>
+
         <div className="flex items-center gap-3">
+          <Link
+            href="/spike"
+            className="hidden cursor-pointer text-sm text-faint transition-colors duration-200 hover:text-gold sm:inline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+          >
+            Live decrypt demo
+          </Link>
           <NetworkIndicator />
           <ConnectButton
             showBalance={false}

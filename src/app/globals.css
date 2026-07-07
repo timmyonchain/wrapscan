@@ -61,6 +61,44 @@ body {
       0 0 0 1px rgba(255, 210, 8, 0.18),
       0 8px 40px -12px rgba(255, 210, 8, 0.28);
   }
+  /* Entrance motion — one deliberate rise+fade, staggered via inline delay.
+     `both` fill keeps the final state when reduced-motion collapses duration. */
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .rise-in {
+    animation: rise-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes cue-bob {
+    0%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.55;
+    }
+    50% {
+      transform: translateY(6px);
+      opacity: 1;
+    }
+  }
+  .cue-bob {
+    animation: cue-bob 1.9s ease-in-out infinite;
+  }
+  /* Soft dark halo behind hero text so it stays legible over bright beams. */
+  .hero-scrim {
+    background: radial-gradient(
+      52% 45% at 50% 42%,
+      rgba(11, 10, 8, 0.72),
+      transparent 72%
+    );
+  }
+
   /* Respect users who ask for less motion: neutralize decorative transitions. */
   @media (prefers-reduced-motion: reduce) {
     *,
