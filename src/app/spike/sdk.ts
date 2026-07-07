@@ -66,12 +66,28 @@ export function createBrowserSdk(
     network: sdkNetworkRpc(),
   };
 
+  // Multi-thread the FHE WASM ONLY when the page is cross-origin isolated
+  // (COOP/COEP set in next.config => SharedArrayBuffer available). This makes the
+  // unwrap "encrypt" (ZK proof generation) fast enough to beat the SDK's hard 30s
+  // worker timeout ("Request ENCRYPT timed out after 30000ms"). If isolation is
+  // unavailable for any reason, fall back to single-threaded (today's behavior)
+  // so wrap/reveal keep working.
+  const isolated =
+    typeof globalThis !== "undefined" &&
+    (globalThis as unknown as { crossOriginIsolated?: boolean })
+      .crossOriginIsolated === true;
+  const threads = isolated
+    ? Math.min(
+        (typeof navigator !== "undefined" && navigator.hardwareConcurrency) || 4,
+        8,
+      )
+    : undefined;
+
   const config = createConfig({
     chains: [browserChain],
-    // Default web() = single WASM thread (no COOP/COEP). Persist the fetched
-    // FHE public key + params in IndexedDB so the ~4.4 MB CRS is a one-time cost.
+    // Persist the fetched FHE public key + params in IndexedDB (one-time CRS cost).
     relayers: {
-      [zamaSepolia.id]: web({ fheArtifactStorage: indexedDBStorage }),
+      [zamaSepolia.id]: web({ threads, fheArtifactStorage: indexedDBStorage }),
     },
     publicClient,
     walletClient,
