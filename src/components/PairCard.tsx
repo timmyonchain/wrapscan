@@ -5,7 +5,7 @@ import {
   displayDecimals,
 } from "@/lib/registry";
 import { AddressRow } from "./AddressRow";
-import { FaucetBadge, RevokedBadge } from "./Badge";
+import { FaucetBadge, RevokedBadge, CustomBadge } from "./Badge";
 import { FaucetPanel } from "./FaucetPanel";
 import { TokenActionLauncher } from "./TokenActionLauncher";
 import { ShieldIcon, ArrowRightIcon } from "./icons";
@@ -32,6 +32,7 @@ export function PairCard({ pair }: { pair: RegistryPair }) {
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
+          {pair.custom && <CustomBadge />}
           {pair.isValid ? (
             <FaucetBadge faucetable={pair.faucetable} />
           ) : (

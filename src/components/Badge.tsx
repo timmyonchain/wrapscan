@@ -48,3 +48,12 @@ export function RevokedBadge() {
     </Badge>
   );
 }
+
+/** Marks a pair injected from the local config (not the on-chain registry). */
+export function CustomBadge() {
+  return (
+    <Badge tone="muted" icon={<AlertIcon className="h-3.5 w-3.5" />}>
+      Custom (local)
+    </Badge>
+  );
+}

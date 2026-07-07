@@ -9,6 +9,8 @@
  * `resolveRegistry(sources)` — for now it takes only the on-chain source.
  */
 
+import { localPairs } from "@/config/localPairs";
+
 export type Address = `0x${string}`;
 
 export interface TokenMetadata {
@@ -32,6 +34,8 @@ export interface RegistryPair {
   chainId: number;
   /** Human network label, e.g. "Sepolia". */
   network: string;
+  /** True for pairs injected from the local config (not the on-chain registry). */
+  custom?: boolean;
 }
 
 export interface RegistrySnapshot {
@@ -126,20 +130,37 @@ export async function fetchOnchainRegistry(
 }
 
 /**
- * Resolve the registry the UI should render.
+ * Merge custom/dev-only pairs on top of the on-chain pairs. Local pairs are
+ * deduped by confidential token address (on-chain always wins) and tagged
+ * `custom: true`. Pure + exported so it is unit tested.
+ */
+export function mergeLocalPairs(
+  onchain: RegistryPair[],
+  local: RegistryPair[],
+): RegistryPair[] {
+  const seen = new Set(
+    onchain.map((p) => p.confidentialToken.address.toLowerCase()),
+  );
+  const extra = local
+    .filter((p) => !seen.has(p.confidentialToken.address.toLowerCase()))
+    .map((p) => ({ ...p, custom: true }));
+  return [...onchain, ...extra];
+}
+
+/**
+ * Resolve the registry the UI renders — the HYBRID source.
  *
- * SEAM FOR PHASE 3+: this is where a local curated config (labels, ordering,
- * hidden/pinned entries, extra metadata) will be merged on top of the on-chain
- * truth. Signature intentionally leaves room for more sources; today it just
- * returns the on-chain snapshot unchanged.
+ * Source of truth is the live on-chain Wrappers Registry (`fetchOnchainRegistry`).
+ * On top of it we merge `src/config/localPairs.ts` for custom/unregistered pairs.
+ * Pairs Zama registers on-chain therefore appear automatically with no code
+ * change; the local config is only for pairs that are not (yet) registered.
  */
 export async function resolveRegistry(
   signal?: AbortSignal,
 ): Promise<RegistrySnapshot> {
   const onchain = await fetchOnchainRegistry(signal);
-  // const local = await fetchLocalConfig();        // <- future hybrid merge
-  // return mergeRegistry(onchain, local);
-  return onchain;
+  const pairs = mergeLocalPairs(onchain.pairs, localPairs);
+  return { ...onchain, pairs };
 }
 
 /** Split pairs into the active list and revoked list (kept, not discarded). */

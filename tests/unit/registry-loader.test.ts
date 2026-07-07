@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   parsePair,
   partitionByValidity,
+  mergeLocalPairs,
   displaySymbol,
   displayName,
   displayDecimals,
@@ -83,6 +84,39 @@ describe("partitionByValidity", () => {
     const { active, revoked } = partitionByValidity([parsePair(good, 11155111)]);
     expect(active).toHaveLength(1);
     expect(revoked).toHaveLength(0);
+  });
+});
+
+describe("mergeLocalPairs (hybrid source)", () => {
+  const onchain = parsePair(good, 11155111);
+  const localOther: RegistryPair = {
+    index: 1000,
+    token: { address: "0x00000000000000000000000000000000000000aa", symbol: "MYTKN", name: "My Token", decimals: 18 },
+    confidentialToken: { address: "0x00000000000000000000000000000000000000bb", symbol: "cMYTKN", name: "Confidential My Token", decimals: 6 },
+    isValid: true,
+    faucetable: false,
+    chainId: 11155111,
+    network: "Sepolia",
+  };
+
+  it("appends a custom pair and tags it custom:true", () => {
+    const merged = mergeLocalPairs([onchain], [localOther]);
+    expect(merged).toHaveLength(2);
+    expect(merged[1].custom).toBe(true);
+    expect(merged[1].confidentialToken.symbol).toBe("cMYTKN");
+  });
+
+  it("does not duplicate a pair already present on-chain (on-chain wins, case-insensitive)", () => {
+    const dup: RegistryPair = { ...onchain, index: 1001, token: { ...onchain.token, symbol: "SHADOW" } };
+    // same confidential address as on-chain, different case
+    dup.confidentialToken = { ...onchain.confidentialToken, address: onchain.confidentialToken.address.toLowerCase() as `0x${string}` };
+    const merged = mergeLocalPairs([onchain], [dup]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].custom).toBeUndefined(); // untouched on-chain entry
+  });
+
+  it("returns the on-chain list unchanged when there are no local pairs", () => {
+    expect(mergeLocalPairs([onchain], [])).toEqual([onchain]);
   });
 });
 
