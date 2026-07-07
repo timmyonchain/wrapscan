@@ -56,7 +56,15 @@ export function useZamaToken(confidentialToken: Address) {
         warmedRef.current = true;
       }
       if (!sdkRef.current) {
-        sdkRef.current = createBrowserSdk(publicClient, walletClient);
+        const sdk = createBrowserSdk(publicClient, walletClient);
+        // Force the SAME full init that /spike proves works: load BOTH the FHE
+        // public key AND the public params (CRS). Reveal/decrypt only needs the
+        // public key, but ENCRYPT (unwrap) needs the CRS — loading it here means
+        // the first unwrap doesn't fail with "Encryption failed" trying to fetch
+        // it mid-flow, and any CRS problem surfaces now with a clear message.
+        await sdk.relayer.fetchFheEncryptionKeyBytes();
+        await sdk.relayer.getPublicParams(2048);
+        sdkRef.current = sdk;
       }
       wrappedRef.current = sdkRef.current.createWrappedToken(confidentialToken);
       setInitState("ready");

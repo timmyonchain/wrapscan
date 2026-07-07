@@ -42,13 +42,25 @@ export function sepoliaTxUrl(hash: string): string {
 
 export const FAUCET_TOKEN = (address: Address) => address; // identity helper for clarity
 
-/** Turn a raw wallet/RPC error into a short, specific, friendly message. */
+/** Collect message + shortMessage across the whole `cause` chain. */
+function collectMessages(err: unknown): string {
+  const parts: string[] = [];
+  let cur: unknown = err;
+  let depth = 0;
+  while (cur && typeof cur === "object" && depth < 6) {
+    const o = cur as { shortMessage?: unknown; message?: unknown; cause?: unknown };
+    if (o.shortMessage) parts.push(String(o.shortMessage));
+    else if (o.message) parts.push(String(o.message));
+    cur = o.cause;
+    depth++;
+  }
+  if (parts.length === 0) parts.push(String(err));
+  return parts.join(" | ");
+}
+
+/** Turn a raw wallet/RPC/relayer error into a short, specific, friendly message. */
 export function mapTxError(err: unknown): string {
-  const raw =
-    (err && typeof err === "object" && "shortMessage" in err
-      ? String((err as { shortMessage?: unknown }).shortMessage)
-      : "") ||
-    (err instanceof Error ? err.message : String(err));
+  const raw = collectMessages(err);
   const msg = raw.toLowerCase();
 
   if (
@@ -78,12 +90,36 @@ export function mapTxError(err: unknown): string {
     return "Wrong network. Switch to Sepolia and try again.";
   }
   if (
+    msg.includes("input-proof") ||
+    msg.includes("input proof") ||
+    msg.includes("contractchainid") ||
+    msg.includes("zkproof") ||
+    msg.includes("zk proof") ||
+    msg.includes("public param") ||
+    msg.includes("crs") ||
+    (msg.includes("encrypt") && msg.includes("proof"))
+  ) {
+    return "Couldn't prepare the encrypted amount (input proof). Please try again in a moment.";
+  }
+  if (
     msg.includes("relayer") ||
     msg.includes("public key") ||
-    msg.includes("decrypt") ||
-    msg.includes("keyurl")
+    msg.includes("keyurl") ||
+    msg.includes("decrypt")
   ) {
     return "The confidential engine (relayer) had a problem. Please try again.";
+  }
+  if (msg.includes("encryption failed") || msg.includes("encrypt")) {
+    // Surface the underlying cause rather than a bare "Encryption failed".
+    const detail = raw
+      .split("|")
+      .map((s) => s.trim())
+      .filter((s) => s && !/^encryption failed$/i.test(s))
+      .join(" — ")
+      .slice(0, 160);
+    return detail
+      ? `Couldn't encrypt the amount: ${detail}`
+      : "Couldn't encrypt the amount for a private unwrap. Please try again.";
   }
   if (msg.includes("reverted") || msg.includes("execution revert")) {
     return "The transaction reverted on-chain. Check the amount and try again.";

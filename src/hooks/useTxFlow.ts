@@ -72,6 +72,9 @@ export function useTxFlow(): TxFlow {
       );
       setPhase("success");
     } catch (e) {
+      // Full error (incl. cause chain) to the console for real diagnosis; the
+      // user sees the friendly mapped message.
+      console.error("[wrapscan tx flow] failed:", e);
       setPhase("error");
       setError(mapTxError(e));
     }

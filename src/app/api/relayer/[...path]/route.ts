@@ -26,6 +26,10 @@ import { zamaSepoliaConfig, SEPOLIA_CHAIN_ID } from "@/lib/zamaConfig";
 // Node runtime so upstream fetch behaves like the node() relayer; never cached.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// The /input-proof (ZK proof verification) call is the slow relayer op — much
+// slower than keyurl/user-decrypt. Give the proxy room so it doesn't time out
+// mid-encrypt (which surfaced to the browser as "Encryption failed").
+export const maxDuration = 60;
 
 // Headers we must not forward verbatim to the upstream.
 const STRIP_REQUEST_HEADERS = new Set([
