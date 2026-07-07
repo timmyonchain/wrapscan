@@ -16,6 +16,7 @@ import { formatUnits, getAddress, type Address } from "viem";
 import type { ZamaSDK } from "@zama-fhe/sdk";
 import type { WrappedToken } from "@zama-fhe/sdk";
 import { createBrowserSdk, relayerProxyBase, warmRelayerKeyMaterial } from "./sdk";
+import { BackToHome } from "@/components/BackToHome";
 
 const CUSDT_WRAPPER = getAddress("0x4E7B06D78965594eB5EF5414c357ca21E1554491");
 const DECIMALS = 6; // USDTMock
@@ -245,6 +246,9 @@ export default function SpikePage() {
 
   return (
     <main style={{ maxWidth: 820, margin: "0 auto", padding: 24, fontFamily: "ui-monospace, monospace" }}>
+      <div style={{ marginBottom: 20 }}>
+        <BackToHome />
+      </div>
       <h1>Phase 1 spike: cUSDTMock decryption round-trip</h1>
       <p style={{ color: "#888" }}>
         Wrapper {CUSDT_WRAPPER} on Sepolia. Real encryption via Zama relayer +

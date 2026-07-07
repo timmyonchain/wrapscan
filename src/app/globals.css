@@ -61,6 +61,50 @@ body {
       0 0 0 1px rgba(255, 210, 8, 0.18),
       0 8px 40px -12px rgba(255, 210, 8, 0.28);
   }
+  /* Small, clearly-clickable button with a soft Zama-gold edge glow that is
+     gentle at rest and intensifies on hover / keyboard focus. Pure CSS
+     (box-shadow transitions), no per-pointer JS. Display is left to Tailwind
+     so callers control inline-flex + responsive visibility. */
+  .glow-btn {
+    border-radius: 10px;
+    padding: 0.4rem 0.72rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    color: rgb(var(--muted-rgb));
+    background: linear-gradient(180deg, rgba(28, 25, 18, 0.55), rgba(16, 14, 10, 0.5));
+    border: 1px solid rgba(255, 210, 8, 0.28);
+    box-shadow:
+      0 0 0 1px rgba(255, 210, 8, 0.05),
+      0 8px 22px -14px rgba(255, 210, 8, 0.5);
+    cursor: pointer;
+    transition:
+      box-shadow 0.28s ease,
+      border-color 0.28s ease,
+      color 0.2s ease,
+      transform 0.18s ease;
+  }
+  .glow-btn:hover {
+    color: rgb(var(--text-rgb));
+    border-color: rgba(255, 210, 8, 0.6);
+    box-shadow:
+      0 0 0 1px rgba(255, 210, 8, 0.14),
+      0 0 16px -3px rgba(255, 210, 8, 0.5),
+      0 0 40px -12px rgba(255, 210, 8, 0.4);
+    transform: translateY(-1px);
+  }
+  .glow-btn:focus-visible {
+    outline: none;
+    color: rgb(var(--text-rgb));
+    border-color: rgba(255, 210, 8, 0.78);
+    box-shadow:
+      0 0 0 2px rgba(255, 210, 8, 0.55),
+      0 0 20px -3px rgba(255, 210, 8, 0.5);
+  }
+  .glow-btn:active {
+    transform: translateY(0);
+  }
   /* Entrance motion — one deliberate rise+fade, staggered via inline delay.
      `both` fill keeps the final state when reduced-motion collapses duration. */
   @keyframes rise-in {

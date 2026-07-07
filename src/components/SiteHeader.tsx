@@ -63,13 +63,13 @@ export function SiteHeader() {
         <div className="flex items-center gap-3">
           <Link
             href="/decrypt"
-            className="hidden cursor-pointer text-sm text-faint transition-colors duration-200 hover:text-gold sm:inline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+            className="glow-btn hidden items-center gap-1.5 sm:inline-flex"
           >
             Decrypt any token
           </Link>
           <Link
             href="/spike"
-            className="hidden cursor-pointer text-sm text-faint transition-colors duration-200 hover:text-gold md:inline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+            className="glow-btn hidden items-center gap-1.5 md:inline-flex"
           >
             Live decrypt demo
           </Link>
