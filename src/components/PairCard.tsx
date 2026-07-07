@@ -7,6 +7,7 @@ import {
 import { AddressRow } from "./AddressRow";
 import { FaucetBadge, RevokedBadge } from "./Badge";
 import { FaucetPanel } from "./FaucetPanel";
+import { TokenActionLauncher } from "./TokenActionLauncher";
 import { ShieldIcon, ArrowRightIcon } from "./icons";
 
 /** A single registry pair as a dark translucent glass card. */
@@ -77,8 +78,15 @@ export function PairCard({ pair }: { pair: RegistryPair }) {
         <AddressRow label="ERC-7984" address={pair.confidentialToken.address} />
       </div>
 
-      {/* Faucet action + live balance. Wrap/unwrap will join this slot later. */}
+      {/* Faucet action + live balance. */}
       {pair.isValid && <FaucetPanel pair={pair} />}
+
+      {/* Open the focused wrap / unwrap / reveal panel for this pair. */}
+      {pair.isValid && (
+        <div className="border-t border-hairline pt-4">
+          <TokenActionLauncher pair={pair} />
+        </div>
+      )}
     </article>
   );
 }

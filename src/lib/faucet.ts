@@ -56,18 +56,37 @@ export function mapTxError(err: unknown): string {
     msg.includes("user denied") ||
     msg.includes("rejected the request") ||
     msg.includes("denied transaction") ||
+    msg.includes("denied message") ||
+    msg.includes("signature") && msg.includes("reject") ||
     msg.includes("4001")
   ) {
-    return "You rejected the transaction in your wallet.";
+    return "You rejected the request in your wallet.";
   }
   if (msg.includes("insufficient funds")) {
     return "Not enough Sepolia ETH for gas. Grab some from a faucet and try again.";
   }
+  if (
+    msg.includes("insufficient") &&
+    (msg.includes("balance") || msg.includes("allowance"))
+  ) {
+    return "Insufficient balance for this amount.";
+  }
+  if (msg.includes("allowance") || msg.includes("approve")) {
+    return "Token approval failed or was not granted. Try again.";
+  }
   if (msg.includes("chain mismatch") || msg.includes("does not match the target chain")) {
     return "Wrong network. Switch to Sepolia and try again.";
   }
+  if (
+    msg.includes("relayer") ||
+    msg.includes("public key") ||
+    msg.includes("decrypt") ||
+    msg.includes("keyurl")
+  ) {
+    return "The confidential engine (relayer) had a problem. Please try again.";
+  }
   if (msg.includes("reverted") || msg.includes("execution revert")) {
-    return "The mint reverted on-chain. This token may not be claimable.";
+    return "The transaction reverted on-chain. Check the amount and try again.";
   }
   if (msg.includes("timeout") || msg.includes("timed out")) {
     return "The network timed out. Please try again.";

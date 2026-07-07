@@ -9,7 +9,8 @@
     "lint": "next lint",
     "ground-truth": "tsx scripts/enumerate-registry.ts",
     "spike": "node scripts/spike.ts",
-    "faucet-test": "node scripts/faucet-test.ts"
+    "faucet-test": "node scripts/faucet-test.ts",
+    "panel-test": "node scripts/panel-test.ts"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.11",

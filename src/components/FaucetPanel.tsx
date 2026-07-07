@@ -126,6 +126,18 @@ export function FaucetPanel({ pair }: { pair: RegistryPair }) {
           <span>{claim.error}</span>
         </p>
       )}
+
+      {/* Soft nudge — a friendly hint only. Never blocks or throttles claiming. */}
+      {isConnected &&
+        onSepolia &&
+        typeof balanceQuery.data === "bigint" &&
+        balanceQuery.data > 0n &&
+        formattedBalance && (
+          <p className="text-xs text-faint">
+            You already have {trimAmount(formattedBalance)} {symbol}. Try
+            wrapping some before claiming more.
+          </p>
+        )}
     </div>
   );
 }
