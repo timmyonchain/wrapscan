@@ -8,6 +8,7 @@ import {
 } from "@/lib/registry";
 import { PairCard } from "./PairCard";
 import { PairCardSkeleton } from "./PairCardSkeleton";
+import { BalancesSummary } from "./BalancesSummary";
 import { AlertIcon } from "./icons";
 
 type State =
@@ -91,6 +92,7 @@ export function RegistryBrowser() {
       } on Sepolia · ${faucetCount} faucet-able mock${
         faucetCount === 1 ? "" : "s"
       } · ${restrictedCount} restricted · ${revoked.length} revoked`}
+      aside={<BalancesSummary pairs={active} />}
     >
       {active.length === 0 ? (
         <div className="glass mx-auto max-w-xl rounded-2xl p-8 text-center text-muted">
@@ -137,28 +139,33 @@ function Section({
   eyebrow,
   title,
   subtitle,
+  aside,
   children,
 }: {
   eyebrow: string;
   title: string;
   subtitle?: string;
+  aside?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <section className="mx-auto w-full max-w-content px-4 pb-24 pt-10 sm:px-6 sm:pt-16">
-      <div className="mb-8 max-w-2xl sm:mb-10">
-        <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-gold/25 bg-gold/[0.06] px-3 py-1 text-xs font-medium text-gold">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gold" />
-          {eyebrow}
-        </p>
-        <h1 className="text-balance text-3xl font-semibold tracking-tight text-text sm:text-4xl">
-          {title}
-        </h1>
-        {subtitle && (
-          <p className="mt-3 text-pretty text-base leading-relaxed text-muted">
-            {subtitle}
+      <div className="mb-8 flex flex-col gap-6 sm:mb-10 sm:flex-row sm:items-start sm:justify-between">
+        <div className="max-w-2xl">
+          <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-gold/25 bg-gold/[0.06] px-3 py-1 text-xs font-medium text-gold">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gold" />
+            {eyebrow}
           </p>
-        )}
+          <h1 className="text-balance text-3xl font-semibold tracking-tight text-text sm:text-4xl">
+            {title}
+          </h1>
+          {subtitle && (
+            <p className="mt-3 text-pretty text-base leading-relaxed text-muted">
+              {subtitle}
+            </p>
+          )}
+        </div>
+        {aside && <div className="w-full sm:w-auto sm:shrink-0">{aside}</div>}
       </div>
       {children}
     </section>
